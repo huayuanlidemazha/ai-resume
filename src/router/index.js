@@ -25,7 +25,7 @@ import AdminLogs from '@/views/admin/AdminLogs.vue';
 
 const routes = [
   {
-    path: './',
+    path: '/',
     redirect: { name: 'Login' }
   },
   {
