@@ -29,7 +29,24 @@
           <div class="page-header">
             <div class="page-title">用户构成</div>
           </div>
-          <div ref="userPieRef" style="height: 260px" />
+          <div style="display: flex; gap: 16px; align-items: center">
+            <div class="pie" :style="{ background: pieBackground }" />
+            <div style="flex: 1">
+              <div class="legend">
+                <span class="dot recruiter" /> 招聘者：{{ stats.recruiters }}
+              </div>
+              <div class="legend">
+                <span class="dot jobseeker" /> 求职者：{{ stats.jobseekers }}
+              </div>
+              <div class="legend">
+                <span class="dot admin" /> 管理员：{{ stats.admins }}
+              </div>
+              <el-divider style="margin: 12px 0" />
+              <div style="color: #909399; font-size: 12px">
+                图表为原型展示（纯前端渲染），后续接入后端接口后可替换为真实数据。
+              </div>
+            </div>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -37,7 +54,15 @@
           <div class="page-header">
             <div class="page-title">岗位分布</div>
           </div>
-          <div ref="jobBarRef" style="height: 260px" />
+          <div style="height: 260px; display: flex; flex-direction: column; gap: 14px; justify-content: center">
+            <div v-for="item in deptJobs" :key="item.name" class="bar-row">
+              <div class="bar-label">{{ item.name }}</div>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: item.percent + '%' }" />
+              </div>
+              <div class="bar-value">{{ item.value }}</div>
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -45,61 +70,92 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from 'vue';
-import * as echarts from 'echarts';
+import { computed } from 'vue';
 
-const userPieRef = ref(null);
-const jobBarRef = ref(null);
-let userPieChart;
-let jobBarChart;
+const stats = {
+  recruiters: 56,
+  jobseekers: 174,
+  admins: 3
+};
 
-onMounted(() => {
-  if (userPieRef.value) {
-    userPieChart = echarts.init(userPieRef.value);
-    userPieChart.setOption({
-      tooltip: { trigger: 'item' },
-      legend: { bottom: 0 },
-      series: [
-        {
-          name: '用户类型',
-          type: 'pie',
-          radius: '60%',
-          data: [
-            { value: 56, name: '招聘者' },
-            { value: 174, name: '求职者' },
-            { value: 3, name: '管理员' }
-          ]
-        }
-      ]
-    });
-  }
+const total = stats.recruiters + stats.jobseekers + stats.admins;
 
-  if (jobBarRef.value) {
-    jobBarChart = echarts.init(jobBarRef.value);
-    jobBarChart.setOption({
-      tooltip: { trigger: 'axis' },
-      xAxis: {
-        type: 'category',
-        data: ['技术部', '数据部', '产品部']
-      },
-      yAxis: {
-        type: 'value'
-      },
-      series: [
-        {
-          name: '岗位数量',
-          type: 'bar',
-          data: [20, 15, 13],
-          itemStyle: { color: '#409EFF' }
-        }
-      ]
-    });
-  }
+const pieBackground = computed(() => {
+  const r = (stats.recruiters / total) * 100;
+  const j = (stats.jobseekers / total) * 100;
+  const a = (stats.admins / total) * 100;
+  // 颜色与 legend dot 保持一致
+  return `conic-gradient(#67C23A 0 ${r}%, #409EFF ${r}% ${r + j}%, #E6A23C ${r + j}% 100%)`;
 });
 
-onBeforeUnmount(() => {
-  if (userPieChart) userPieChart.dispose();
-  if (jobBarChart) jobBarChart.dispose();
+const deptJobs = computed(() => {
+  const raw = [
+    { name: '技术部', value: 20 },
+    { name: '数据部', value: 15 },
+    { name: '产品部', value: 13 }
+  ];
+  const max = Math.max(...raw.map((x) => x.value), 1);
+  return raw.map((x) => ({ ...x, percent: Math.round((x.value / max) * 100) }));
 });
 </script>
+
+<style scoped>
+.pie {
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 10px rgba(255, 255, 255, 0.9);
+  border: 1px solid #ebeef5;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.8;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.dot.recruiter {
+  background: #67C23A;
+}
+.dot.jobseeker {
+  background: #409EFF;
+}
+.dot.admin {
+  background: #E6A23C;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 36px;
+  gap: 12px;
+  align-items: center;
+}
+.bar-label {
+  color: #606266;
+  font-size: 13px;
+}
+.bar-track {
+  height: 10px;
+  background: #f2f6fc;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 10px;
+  background: linear-gradient(90deg, #409EFF, #67C23A);
+  border-radius: 999px;
+}
+.bar-value {
+  text-align: right;
+  color: #303133;
+  font-weight: 600;
+}
+</style>
 
